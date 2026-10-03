@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Token Decimals Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f6f8fa;
+            color: #24292f;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        label {
+            display: block;
+            margin-top: 16px;
+            margin-bottom: 6px;
+            font-weight: bold;
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        button {
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f1f8ff;
+            border-radius: 8px;
+            word-break: break-word;
+        }
+
+        .error {
+            color: #cf222e;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Web3 Token Decimals Converter</h1>
+        <p>Convert between raw token units and human-readable amounts.</p>
+
+        <label for="direction">Conversion</label>
+        <select id="direction">
+            <option value="rawToToken">Raw → Token</option>
+            <option value="tokenToRaw">Token → Raw</option>
+        </select>
+
+        <label for="amount">Amount</label>
+        <input id="amount" type="text" placeholder="Enter amount">
+
+        <label for="decimals">Decimals</label>
+        <input id="decimals" type="number" min="0" max="36" value="18">
+
+        <button onclick="convert()">Convert</button>
+
+        <div id="result" class="result">
+            Result will appear here.
+        </div>
+    </div>
+
+    <script>
+        function convert() {
+            const direction = document.getElementById("direction").value;
+            const amount = document.getElementById("amount").value.trim();
+            const decimals = Number(document.getElementById("decimals").value);
+            const result = document.getElementById("result");
+
+            if (!amount) {
+                result.innerHTML = '<span class="error">Please enter an amount.</span>';
+                return;
+            }
+
+            if (!Number.isInteger(decimals) || decimals < 0 || decimals > 36) {
+                result.innerHTML = '<span class="error">Decimals must be between 0 and 36.</span>';
+                return;
+            }
+
+            try {
+                const scale = 10n ** BigInt(decimals);
+
+                if (direction === "rawToToken") {
+                    const raw = BigInt(amount);
+                    const whole = raw / scale;
+                    const fraction = raw % scale;
+
+                    if (fraction === 0n) {
+                        result.textContent = whole.toString();
+                        return;
+                    }
+
+                    const fractionText = fraction
+                        .toString()
+                        .padStart(decimals, "0")
+                        .replace(/0+$/, "");
+
+                    result.textContent = `${whole}.${fractionText}`;
+                } else {
+                    if (!/^\d+(\.\d+)?$/.test(amount)) {
+                        throw new Error("Invalid token amount");
+                    }
+
+                    const [whole, fraction = ""] = amount.split(".");
+
+                    if (fraction.length > decimals) {
+                        throw new Error("Too many decimal places");
+                    }
+
+                    const paddedFraction = fraction.padEnd(decimals, "0");
+                    const raw = BigInt(whole) * scale + BigInt(paddedFraction || "0");
+
+                    result.textContent = raw.toString();
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>
